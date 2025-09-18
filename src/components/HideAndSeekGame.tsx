@@ -201,6 +201,13 @@ const HideAndSeekGame: React.FC = () => {
     }));
   }, [gameState, isValidMove]);
 
+  // Handle button clicks for movement
+  const handleButtonMove = useCallback((key: string) => {
+    if (moveMap[key] && key !== 's') { // 's' is stay in place, not allowed
+      handleHiderMove(moveMap[key]);
+    }
+  }, [handleHiderMove, moveMap]);
+
   // Handle keyboard input
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -410,17 +417,38 @@ const HideAndSeekGame: React.FC = () => {
             <h3 className="font-semibold text-foreground mb-2">Controls</h3>
             <div className="grid grid-cols-3 gap-1 w-32 mx-auto text-xs">
               {['Q', 'W', 'E'].map(key => (
-                <Button key={key} variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  key={key} 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleButtonMove(key.toLowerCase())}
+                  disabled={gameState.isGameOver || gameState.seekerTurn}
+                >
                   {key}
                 </Button>
               ))}
               {['A', 'S', 'D'].map(key => (
-                <Button key={key} variant="outline" size="sm" className="h-8 w-8 p-0" disabled={key === 'S'}>
+                <Button 
+                  key={key} 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 w-8 p-0" 
+                  disabled={key === 'S' || gameState.isGameOver || gameState.seekerTurn}
+                  onClick={() => key !== 'S' && handleButtonMove(key.toLowerCase())}
+                >
                   {key}
                 </Button>
               ))}
               {['Z', 'X', 'C'].map(key => (
-                <Button key={key} variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  key={key} 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleButtonMove(key.toLowerCase())}
+                  disabled={gameState.isGameOver || gameState.seekerTurn}
+                >
                   {key}
                 </Button>
               ))}
