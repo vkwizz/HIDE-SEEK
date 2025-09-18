@@ -47,6 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Game-specific colors
+        "grid-cell": "hsl(var(--grid-cell))",
+        "grid-border": "hsl(var(--grid-border))",
+        hider: "hsl(var(--hider))",
+        seeker: "hsl(var(--seeker))",
+        obstacle: "hsl(var(--obstacle))",
+        highlight: "hsl(var(--highlight))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
