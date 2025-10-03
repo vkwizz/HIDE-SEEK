@@ -1,73 +1,93 @@
-# Welcome to your Lovable project
+# Tactical Hide & Seek - Strategic Grid Game
 
-## Project info
+A turn-based tactical hide-and-seek game built with React, TypeScript, and Vite.  
+Play as the Hider and try to survive 10 moves while the Seeker uses pathfinding AI to catch you!
 
-**URL**: https://lovable.dev/projects/21371ce6-f802-4935-bc0f-aa4f7a4047d1
+---
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **4x4 Grid:** Compact board for strategic movement.
+- **Obstacles:** Randomly placed and relocated every 3 moves.
+- **Seeker AI:** Uses A* pathfinding to chase the Hider.
+- **Hider Controls:** Move in 8 directions using QWEASDZXC keys or on-screen buttons.
+- **Win Conditions:** Survive 10 moves to win as Hider, or get caught by the Seeker.
+- **Responsive UI:** Built with shadcn/ui and styled for clarity.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/21371ce6-f802-4935-bc0f-aa4f7a4047d1) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- [Node.js 20.x LTS](https://nodejs.org/en/download/)
+- [npm](https://www.npmjs.com/)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/vkwizz/HIDE-SEEK.git
+   cd HIDE-SEEK
+   ```
 
-Follow these steps:
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. Start the development server:
+   ```sh
+   npm run dev
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## How to Play
 
-**Edit a file directly in GitHub**
+1. **Setup:**  
+   - Choose your starting position for the Hider (top-left by default).
+   - Seeker always starts at (3,3).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+2. **Controls:**  
+   - Use QWEASDZXC keys or on-screen buttons for 8-directional movement.
+   - Avoid obstacles and the Seeker.
 
-**Use GitHub Codespaces**
+3. **Turns:**  
+   - Each move, the Seeker will chase you using pathfinding.
+   - Obstacles relocate every 3 moves.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+4. **Win:**  
+   - Survive 10 moves to win as Hider.
+   - If the Seeker catches you, you lose.
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## Tech Stack
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **React** & **TypeScript**
+- **Vite** (fast dev server)
+- **shadcn/ui** (UI components)
+- **A* Pathfinding** (Seeker AI)
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/21371ce6-f802-4935-bc0f-aa4f7a4047d1) and click on Share -> Publish.
+## Contributing
 
-## Can I connect a custom domain to my Lovable project?
+Pull requests are welcome!  
+For major changes, please open an issue first to discuss what you would like to change.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+MIT
+
+---
+
+## Credits
+
+- Game logic and UI by [vkwizz](https://github.com/vkwizz)
+- Inspired by classic grid-based strategy games.
