@@ -31,7 +31,7 @@ interface GameState {
 // A* pathfinding algorithm
 function aStar(start: Position, goal: Position, obstacles: Position[]): Position[] {
   const isObstacle = (pos: Position) =>
-    obstacles.some(obs => obs.x === pos.x && pos.y === pos.y);
+    obstacles.some(obs => obs.x === pos.x && obs.y === pos.y);
   
   const isInBounds = (pos: Position) =>
     pos.x >= 0 && pos.x < GRID_SIZE && pos.y >= 0 && pos.y < GRID_SIZE;
@@ -43,7 +43,10 @@ function aStar(start: Position, goal: Position, obstacles: Position[]): Position
       { x: pos.x, y: pos.y + 1 },
       { x: pos.x, y: pos.y - 1 }
     ];
-    return neighbors.filter(n => isInBounds(n) && !isObstacle(n));
+    // Allow goal position even if it would normally be blocked
+    return neighbors.filter(n => 
+      isInBounds(n) && (!isObstacle(n) || (n.x === goal.x && n.y === goal.y))
+    );
   };
   
   const heuristic = (a: Position, b: Position) =>
