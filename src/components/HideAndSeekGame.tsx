@@ -132,12 +132,12 @@ const HideAndSeekGame: React.FC = () => {
     previousHiderPos: null
   });
 
-  // Movement mappings for keyboard controls
-  const moveMap: { [key: string]: Position } = {
+  // Movement mappings for keyboard controls (stable reference)
+  const moveMap = React.useMemo(() => ({
     'q': { x: -1, y: -1 }, 'w': { x: 0, y: -1 }, 'e': { x: 1, y: -1 },
     'a': { x: -1, y: 0 }, 's': { x: 0, y: 0 }, 'd': { x: 1, y: 0 },
     'z': { x: -1, y: 1 }, 'x': { x: 0, y: 1 }, 'c': { x: 1, y: 1 }
-  };
+  }), []);
 
   const startGame = useCallback(() => {
     const obstacles = randomObstacles(startPosition, { x: 3, y: 3 });
@@ -253,9 +253,9 @@ const HideAndSeekGame: React.FC = () => {
           ...prev,
           seekerPos: newSeekerPos,
           seekerTurn: false,
-          message: gameState.hiderMoves >= MAX_HIDER_MOVES ? 
+          message: prev.hiderMoves >= MAX_HIDER_MOVES ? 
             'Hider survived! You win!' : 
-            `Your turn! Moves: ${gameState.hiderMoves}/${MAX_HIDER_MOVES}`
+            `Your turn! Moves: ${prev.hiderMoves}/${MAX_HIDER_MOVES}`
         }));
       } else {
         setGameState(prev => ({
@@ -267,7 +267,7 @@ const HideAndSeekGame: React.FC = () => {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [gameState.seekerTurn, gameState.isGameOver, gameState.seekerPos, gameState.hiderPos, gameState.obstacles, gameState.hiderMoves, toast]);
+  }, [gameState.seekerTurn, gameState.isGameOver, gameState.seekerPos, gameState.hiderPos, gameState.obstacles, toast]);
 
   // Check win condition for hider
   useEffect(() => {
@@ -283,10 +283,13 @@ const HideAndSeekGame: React.FC = () => {
   }, [gameState.hiderMoves, gameState.seekerTurn, gameState.isGameOver, toast]);
 
   // Relocate obstacles
+  const prevHiderMovesRef = React.useRef(0);
   useEffect(() => {
     if (gameState.hiderMoves > 0 && 
         gameState.hiderMoves % OBSTACLE_RELOCATE_INTERVAL === 0 && 
-        !gameState.seekerTurn) {
+        !gameState.seekerTurn &&
+        prevHiderMovesRef.current !== gameState.hiderMoves) {
+      prevHiderMovesRef.current = gameState.hiderMoves;
       const newObstacles = randomObstacles(gameState.hiderPos, gameState.seekerPos);
       setGameState(prev => ({
         ...prev,
