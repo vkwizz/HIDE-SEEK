@@ -30,73 +30,78 @@ interface GameState {
 
 // A* pathfinding algorithm
 function aStar(start: Position, goal: Position, obstacles: Position[]): Position[] {
-  const isObstacle = (pos: Position) =>
-    obstacles.some(obs => obs.x === pos.x && obs.y === pos.y);
-  
-  const isInBounds = (pos: Position) =>
-    pos.x >= 0 && pos.x < GRID_SIZE && pos.y >= 0 && pos.y < GRID_SIZE;
-  
-  const getNeighbors = (pos: Position): Position[] => {
-    const neighbors = [
-      { x: pos.x + 1, y: pos.y },
-      { x: pos.x - 1, y: pos.y },
-      { x: pos.x, y: pos.y + 1 },
-      { x: pos.x, y: pos.y - 1 }
-    ];
-    // Allow goal position even if it would normally be blocked
-    return neighbors.filter(n => 
-      isInBounds(n) && (!isObstacle(n) || (n.x === goal.x && n.y === goal.y))
-    );
-  };
-  
-  const heuristic = (a: Position, b: Position) =>
-    Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-  
-  const openSet = [start];
-  const cameFrom = new Map<string, Position>();
-  const gScore = new Map<string, number>();
-  const fScore = new Map<string, number>();
-  
-  const posKey = (pos: Position) => `${pos.x},${pos.y}`;
-  
-  gScore.set(posKey(start), 0);
-  fScore.set(posKey(start), heuristic(start, goal));
-  
-  while (openSet.length > 0) {
-    const current = openSet.reduce((a, b) =>
-      (fScore.get(posKey(a)) || Infinity) < (fScore.get(posKey(b)) || Infinity) ? a : b
-    );
-    
+  const openSet: Position[] = [start];
+  const cameFrom: Record<string, Position | null> = {};
+  const gScore: Record<string, number> = {};
+  const fScore: Record<string, number> = {};
+
+  const key = (p: Position) => `${p.x},${p.y}`;
+  gScore[key(start)] = 0;
+  fScore[key(start)] = manhattan(start, goal);
+
+  const isObstacle = (p: Position) =>
+    obstacles.some(o => o.x === p.x && o.y === p.y);
+
+  let iterations = 0;
+  const MAX_ITER = 100; // safety cap to prevent infinite loop
+
+  while (openSet.length > 0 && iterations < MAX_ITER) {
+    iterations++;
+
+    // pick node with lowest fScore
+    openSet.sort((a, b) => (fScore[key(a)] ?? Infinity) - (fScore[key(b)] ?? Infinity));
+    const current = openSet.shift()!;
     if (current.x === goal.x && current.y === goal.y) {
-      const path = [];
-      let curr = current;
-      while (cameFrom.has(posKey(curr))) {
+      // reconstruct path
+      const path: Position[] = [];
+      let curr: Position | null = current;   // ✅ make mutable variable
+      while (curr && cameFrom[key(curr)]) {
         path.unshift(curr);
-        curr = cameFrom.get(posKey(curr))!;
+        curr = cameFrom[key(curr)] ?? null;
       }
       return path;
     }
-    
-    openSet.splice(openSet.indexOf(current), 1);
-    
-    for (const neighbor of getNeighbors(current)) {
-      const tentativeGScore = (gScore.get(posKey(current)) || 0) + 1;
-      const neighborKey = posKey(neighbor);
-      
-      if (tentativeGScore < (gScore.get(neighborKey) || Infinity)) {
-        cameFrom.set(neighborKey, current);
-        gScore.set(neighborKey, tentativeGScore);
-        fScore.set(neighborKey, tentativeGScore + heuristic(neighbor, goal));
-        
-        if (!openSet.some(pos => pos.x === neighbor.x && pos.y === neighbor.y)) {
+
+    // neighbors (orthogonal only for Seeker)
+    const neighbors: Position[] = [
+      { x: current.x + 1, y: current.y },
+      { x: current.x - 1, y: current.y },
+      { x: current.x, y: current.y + 1 },
+      { x: current.x, y: current.y - 1 },
+    ].filter(
+      n =>
+        n.x >= 0 &&
+        n.y >= 0 &&
+        n.x < GRID_SIZE &&
+        n.y < GRID_SIZE &&
+        !isObstacle(n)
+    );
+
+    for (const neighbor of neighbors) {
+      const tentativeG = (gScore[key(current)] ?? Infinity) + 1;
+      if (tentativeG < (gScore[key(neighbor)] ?? Infinity)) {
+        cameFrom[key(neighbor)] = current;
+        gScore[key(neighbor)] = tentativeG;
+        fScore[key(neighbor)] = tentativeG + manhattan(neighbor, goal);
+
+        if (!openSet.some(p => p.x === neighbor.x && p.y === neighbor.y)) {
           openSet.push(neighbor);
         }
       }
     }
   }
-  
+
+  // no path found
   return [];
 }
+
+
+
+
+function manhattan(a: Position, b: Position): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
 
 // Generate random obstacles
 function randomObstacles(hiderPos: Position, seekerPos: Position): Position[] {
@@ -158,51 +163,66 @@ const HideAndSeekGame: React.FC = () => {
     setGameStarted(true);
   }, [startPosition]);
 
-  const isValidMove = useCallback((newPos: Position, currentState: GameState): boolean => {
-    // Check bounds
-    if (newPos.x < 0 || newPos.x >= GRID_SIZE || newPos.y < 0 || newPos.y >= GRID_SIZE) {
-      return false;
-    }
-    
-    // Check obstacles
-    if (currentState.obstacles.some(obs => obs.x === newPos.x && obs.y === newPos.y)) {
-      return false;
-    }
-    
-    // Check backtracking
-    if (currentState.previousHiderPos &&
-        newPos.x === currentState.previousHiderPos.x && 
-        newPos.y === currentState.previousHiderPos.y) {
-      return false;
-    }
-    
-    return true;
-  }, []);
+const isValidMove = useCallback((newPos: Position, currentState: GameState): boolean => {
+  // Check bounds
+  if (newPos.x < 0 || newPos.x >= GRID_SIZE || newPos.y < 0 || newPos.y >= GRID_SIZE) {
+    return false;
+  }
 
-  const handleHiderMove = useCallback((direction: Position) => {
-    if (gameState.isGameOver || gameState.seekerTurn) return;
+  // ✅ Obstacles only, Seeker cell allowed
+  if (currentState.obstacles.some(obs => obs.x === newPos.x && obs.y === newPos.y)) {
+    return false;
+  }
+
+  // Check backtracking
+  if (currentState.previousHiderPos &&
+      newPos.x === currentState.previousHiderPos.x && 
+      newPos.y === currentState.previousHiderPos.y) {
+    return false;
+  }
+
+  return true;
+}, []);
+
+  // REFACTORED: Use functional update to stabilize dependencies.
+const handleHiderMove = useCallback((direction: Position) => {
+  setGameState(prev => {
+    if (prev.isGameOver || prev.seekerTurn) return prev;
 
     const newPos = {
-      x: gameState.hiderPos.x + direction.x,
-      y: gameState.hiderPos.y + direction.y
+      x: prev.hiderPos.x + direction.x,
+      y: prev.hiderPos.y + direction.y
     };
 
-    if (!isValidMove(newPos, gameState)) {
-      setGameState(prev => ({ ...prev, message: 'Invalid move! Try another direction.' }));
-      return;
+    if (!isValidMove(newPos, prev)) {
+      return { ...prev, message: 'Invalid move! Try another direction.' };
     }
 
-    const newMoves = gameState.hiderMoves + 1;
-    
-    setGameState(prev => ({
+    const newMoves = prev.hiderMoves + 1;
+
+    // ✅ If Hider moves onto Seeker → Seeker wins
+    if (newPos.x === prev.seekerPos.x && newPos.y === prev.seekerPos.y) {
+      toast({ title: "Game Over", description: "You lose! Seeker wins!" });
+      return {
+        ...prev,
+        hiderPos: newPos,
+        hiderMoves: newMoves,
+        isGameOver: true,
+        winner: 'Seeker',
+        message: 'You lose! The Seeker caught you.'
+      };
+    }
+
+    return {
       ...prev,
       previousHiderPos: prev.hiderPos,
       hiderPos: newPos,
       hiderMoves: newMoves,
       seekerTurn: true,
       message: `Move ${newMoves}/${MAX_HIDER_MOVES} - Seeker's turn...`
-    }));
-  }, [gameState, isValidMove]);
+    };
+  });
+}, [isValidMove]);
 
   // Handle button clicks for movement
   const handleButtonMove = useCallback((key: string) => {
@@ -217,6 +237,8 @@ const HideAndSeekGame: React.FC = () => {
       const key = e.key.toLowerCase();
       if (moveMap[key] && key !== 's') { // 's' is stay in place, not allowed
         e.preventDefault();
+        // Since handleHiderMove is wrapped in useCallback and its dependencies
+        // are stable, calling it here is safe.
         handleHiderMove(moveMap[key]);
       }
     };
@@ -229,48 +251,48 @@ const HideAndSeekGame: React.FC = () => {
   }, [gameStarted, gameState.isGameOver, handleHiderMove, moveMap]);
 
   // Seeker AI move
-  useEffect(() => {
-    if (!gameState.seekerTurn || gameState.isGameOver) return;
+useEffect(() => {
+  if (!gameState.seekerTurn || gameState.isGameOver) return;
 
-    const timer = setTimeout(() => {
-      const path = aStar(gameState.seekerPos, gameState.hiderPos, gameState.obstacles);
-      
+  const timer = setTimeout(() => {
+    setGameState(prev => {
+      if (!prev.seekerTurn || prev.isGameOver) return prev;
+
+      const path = aStar(prev.seekerPos, prev.hiderPos, prev.obstacles);
+
       if (path.length > 0) {
         const newSeekerPos = path[0];
-        
-        // Check if seeker caught hider
-        if (newSeekerPos.x === gameState.hiderPos.x && newSeekerPos.y === gameState.hiderPos.y) {
-          setGameState(prev => ({
+
+        if (newSeekerPos.x === prev.hiderPos.x && newSeekerPos.y === prev.hiderPos.y) {
+          toast({ title: "Game Over", description: "Seeker wins!" });
+          return {
             ...prev,
             seekerPos: newSeekerPos,
             isGameOver: true,
             winner: 'Seeker',
             message: 'Seeker caught the Hider! Game Over.',
             seekerTurn: false
-          }));
-          toast({ title: "Game Over", description: "Seeker wins!" });
-          return;
+          };
+        } else {
+          return {
+            ...prev,
+            seekerPos: newSeekerPos,
+            seekerTurn: false,
+            message: `Your turn! Moves: ${prev.hiderMoves}/${MAX_HIDER_MOVES}`
+          };
         }
-        
-        setGameState(prev => ({
-          ...prev,
-          seekerPos: newSeekerPos,
-          seekerTurn: false,
-          message: prev.hiderMoves >= MAX_HIDER_MOVES ? 
-            'Hider survived! You win!' : 
-            `Your turn! Moves: ${prev.hiderMoves}/${MAX_HIDER_MOVES}`
-        }));
       } else {
-        setGameState(prev => ({
+        return {
           ...prev,
           seekerTurn: false,
           message: 'Seeker has no path! Your turn.'
-        }));
+        };
       }
-    }, 1000);
+    });
+  }, 200);
 
-    return () => clearTimeout(timer);
-  }, [gameState.seekerTurn, gameState.isGameOver, gameState.seekerPos, gameState.hiderPos, gameState.obstacles, toast]);
+  return () => clearTimeout(timer);
+}, [gameState.seekerTurn, gameState.isGameOver]);
 
   // Check win condition for hider
   useEffect(() => {
